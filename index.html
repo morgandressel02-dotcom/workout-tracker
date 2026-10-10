@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a1a">
+<meta name="apple-mobile-web-app-title" content="Tracker">
+<link rel="apple-touch-icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxODAgMTgwIj48cmVjdCB3aWR0aD0iMTgwIiBoZWlnaHQ9IjE4MCIgcng9IjQwIiBmaWxsPSIjMmQ1YTNkIi8+PHRleHQgeD0iOTAiIHk9IjEyMCIgZm9udC1mYW1pbHk9InN5c3RlbS11aSxzYW5zLXNlcmlmIiBmb250LXNpemU9IjkwIiBmb250LXdlaWdodD0iNzAwIiBmaWxsPSIjZmZmIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5XPC90ZXh0Pjwvc3ZnPg==">
+<link rel="manifest" href="manifest.json">
+<title>Workout Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f5f5f3;
+  --card: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #888;
+  --border: #e2e0dc;
+  --accent: #2d5a3d;
+  --accent-light: #e8f0eb;
+  --blue: #2b4a7c;
+  --blue-light: #e8eef6;
+  --orange: #b45309;
+  --orange-light: #fef3c7;
+  --deload: #7c5e2b;
+  --deload-light: #fdf6e3;
+  --rpe-low: #2d5a3d;
+  --rpe-mid: #b45309;
+  --rpe-high: #b91c1c;
+  --radius: 12px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+  min-height: 100dvh;
+}
+
+/* ---- SCREENS ---- */
+.screen { display: none; min-height: 100dvh; }
+.screen.active { display: block; }
+
+/* ---- HOME SCREEN ---- */
+.home { padding: 24px 16px calc(24px + var(--safe-bottom)); }
+
+.home-header {
+  margin-bottom: 28px;
+}
+
+.home-header h1 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin-bottom: 4px;
+}
+
+.home-header p {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.progress-bar-wrap {
+  background: var(--border);
+  border-radius: 6px;
+  height: 8px;
+  margin-top: 16px;
+  overflow: hidden;
+}
+
+.progress-bar-fill {
+  background: var(--accent);
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+}
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 6px;
+  font-weight: 500;
+}
+
+.week-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.week-block {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.week-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.week-header h2 {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.week-tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+}
+
+.week-tag.deload {
+  background: var(--deload-light);
+  color: var(--deload);
+}
+
+.week-tag.current {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.week-tag.done {
+  background: var(--accent-light);
+  color: var(--accent);
+}
+
+.week-sessions {
+  display: none;
+  padding: 0 16px 14px;
+}
+
+.week-sessions.open { display: flex; flex-direction: column; gap: 8px; }
+
+.session-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  width: 100%;
+  text-align: left;
+  font-family: inherit;
+  color: var(--ink);
+}
+
+.session-btn:active { background: var(--border); }
+
+.session-btn .session-label { display: flex; flex-direction: column; gap: 2px; }
+.session-btn .session-type { font-size: 0.78rem; color: var(--muted); font-weight: 400; }
+
+.session-status {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 20px;
+}
+
+.session-status.todo { background: var(--bg); color: var(--muted); border: 1px solid var(--border); }
+.session-status.done { background: var(--accent-light); color: var(--accent); }
+.session-status.partial { background: var(--orange-light); color: var(--orange); }
+
+/* ---- WORKOUT SCREEN ---- */
+.workout { padding: 0 0 calc(80px + var(--safe-bottom)); background: var(--bg); }
+
+.workout-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  padding: 16px;
+}
+
+.workout-top-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.back-btn {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--ink);
+  font-family: inherit;
+  line-height: 1;
+}
+
+.workout-top h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.workout-top .workout-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
+  margin-top: 4px;
+  padding-left: 36px;
+}
+
+.deload-banner {
+  background: var(--deload-light);
+  color: var(--deload);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 10px 16px;
+  text-align: center;
+}
+
+.exercise-list { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+.exercise-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.exercise-card-header {
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.exercise-card-header h3 {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.exercise-card-header .note {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.set-grid {
+  display: grid;
+  grid-template-columns: 40px 1fr 1fr 1fr;
+  gap: 0;
+}
+
+.set-grid-header {
+  display: contents;
+}
+
+.set-grid-header span {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 8px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.set-row {
+  display: contents;
+}
+
+.set-row > * {
+  padding: 6px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.set-row:last-child > * { border-bottom: none; }
+
+.set-num {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.set-input-wrap { position: relative; }
+
+.set-input {
+  width: 100%;
+  max-width: 80px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 6px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: center;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--bg);
+  -moz-appearance: textfield;
+  transition: border-color 0.15s;
+}
+
+.set-input::-webkit-outer-spin-button,
+.set-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+.set-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  background: #fff;
+}
+
+.set-input.suggested {
+  color: var(--blue);
+  font-style: italic;
+}
+
+.set-input.filled {
+  color: var(--ink);
+  font-style: normal;
+  background: #fff;
+  border-color: var(--accent);
+}
+
+.rpe-select {
+  width: 100%;
+  max-width: 70px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 4px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  font-family: inherit;
+  color: var(--muted);
+  background: var(--bg);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: border-color 0.15s;
+}
+
+.rpe-select:focus { outline: none; border-color: var(--accent); }
+.rpe-select.filled { color: var(--ink); background: #fff; border-color: var(--accent); }
+
+.suggested-label {
+  font-size: 0.68rem;
+  color: var(--blue);
+  text-align: center;
+  padding: 4px 8px 8px;
+  font-weight: 500;
+}
+
+/* Bottom bar */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--card);
+  border-top: 1px solid var(--border);
+  padding: 12px 16px calc(12px + var(--safe-bottom));
+  z-index: 20;
+}
+
+.finish-btn {
+  width: 100%;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: opacity 0.15s;
+}
+
+.finish-btn:active { opacity: 0.85; }
+
+/* Toast */
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%) translateY(-100px);
+  background: var(--ink);
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  z-index: 100;
+  transition: transform 0.3s ease;
+  white-space: nowrap;
+}
+
+.toast.show { transform: translateX(-50%) translateY(0); }
+
+@media (min-width: 500px) {
+  .home, .exercise-list { max-width: 480px; margin: 0 auto; }
+  .workout-top { padding: 16px calc(50% - 224px); }
+  .deload-banner { padding: 10px calc(50% - 224px); }
+  .bottom-bar { padding: 12px calc(50% - 224px) calc(12px + var(--safe-bottom)); }
+}
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- HOME SCREEN -->
+<div class="screen active" id="homeScreen">
+  <div class="home">
+    <div class="home-header">
+      <h1>12-Week Program</h1>
+      <p>Upper / Lower Split &middot; 48 sessions</p>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="progressFill"></div></div>
+      <div class="progress-label"><span id="progressText">0 of 48 sessions</span><span id="progressPct">0%</span></div>
+    </div>
+    <div class="week-grid" id="weekGrid"></div>
+  </div>
+</div>
+
+<!-- WORKOUT SCREEN -->
+<div class="screen" id="workoutScreen">
+  <div class="workout">
+    <div class="workout-top">
+      <div class="workout-top-row">
+        <button class="back-btn" onclick="showHome()">&larr;</button>
+        <h2 id="workoutTitle"></h2>
+      </div>
+      <div class="workout-meta" id="workoutMeta"></div>
+    </div>
+    <div id="deloadBanner" class="deload-banner" style="display:none">Deload week — same weight, half the sets. Focus on recovery.</div>
+    <div class="exercise-list" id="exerciseList"></div>
+    <div class="bottom-bar">
+      <button class="finish-btn" onclick="finishWorkout()">Save workout</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- PROGRAM DATA ----
+const DAYS = [
+  {
+    name: 'Upper A', focus: 'Strength emphasis',
+    exercises: [
+      { name: 'Barbell Bench Press', note: 'Control eccentric, pause at chest', sets: 4, reps: '6–8', startWeight: 135, weeklyAdd: 5 },
+      { name: 'Barbell Row', note: 'Overhand grip, pull to lower chest', sets: 4, reps: '6–8', startWeight: 115, weeklyAdd: 5 },
+      { name: 'Overhead Press', note: 'Standing barbell', sets: 3, reps: '8–10', startWeight: 75, weeklyAdd: 2.5 },
+      { name: 'Incline Dumbbell Curl', note: 'Seated, full stretch at bottom', sets: 3, reps: '10–12', startWeight: 20, weeklyAdd: 2.5 },
+      { name: 'Tricep Pushdown', note: 'Rope or bar attachment', sets: 3, reps: '10–12', startWeight: 40, weeklyAdd: 5 },
+      { name: 'Face Pull', note: 'High cable, external rotation at top', sets: 3, reps: '15–20', startWeight: 30, weeklyAdd: 2.5 },
+    ]
+  },
+  {
+    name: 'Lower A', focus: 'Quad & glute focus',
+    exercises: [
+      { name: 'Barbell Back Squat', note: 'High bar, parallel or below', sets: 4, reps: '6–8', startWeight: 175, weeklyAdd: 5 },
+      { name: 'Romanian Deadlift', note: 'Hinge at hips, feel hamstring stretch', sets: 3, reps: '8–10', startWeight: 135, weeklyAdd: 5 },
+      { name: 'Leg Press', note: 'Feet shoulder-width, full ROM', sets: 3, reps: '10–12', startWeight: 230, weeklyAdd: 10 },
+      { name: 'Walking Lunges', note: 'Dumbbells, controlled steps', sets: 3, reps: '10/leg', startWeight: 30, weeklyAdd: 2.5 },
+      { name: 'Leg Curl', note: 'Machine, squeeze at peak', sets: 3, reps: '10–12', startWeight: 70, weeklyAdd: 5 },
+      { name: 'Standing Calf Raise', note: 'Full stretch, 2-sec pause at top', sets: 4, reps: '12–15', startWeight: 130, weeklyAdd: 5 },
+    ]
+  },
+  {
+    name: 'Upper B', focus: 'Volume emphasis',
+    exercises: [
+      { name: 'Dumbbell Incline Press', note: '30° incline, full stretch', sets: 4, reps: '8–10', startWeight: 45, weeklyAdd: 2.5 },
+      { name: 'Lat Pulldown', note: 'Wide grip, squeeze lats', sets: 4, reps: '8–10', startWeight: 110, weeklyAdd: 5 },
+      { name: 'Cable Row', note: 'Seated, neutral grip, retract scapula', sets: 3, reps: '10–12', startWeight: 100, weeklyAdd: 5 },
+      { name: 'Dumbbell Lateral Raise', note: 'Slight forward lean, controlled', sets: 3, reps: '12–15', startWeight: 15, weeklyAdd: 2.5 },
+      { name: 'Hammer Curl', note: 'Neutral grip, no swinging', sets: 3, reps: '10–12', startWeight: 25, weeklyAdd: 2.5 },
+      { name: 'Overhead Tricep Extension', note: 'Cable or DB, full stretch', sets: 3, reps: '10–12', startWeight: 35, weeklyAdd: 2.5 },
+    ]
+  },
+  {
+    name: 'Lower B', focus: 'Posterior chain focus',
+    exercises: [
+      { name: 'Trap Bar Deadlift', note: 'Neutral grip, drive through floor, chest up', sets: 4, reps: '5–6', startWeight: 155, weeklyAdd: 5 },
+      { name: 'Bulgarian Split Squat', note: 'Rear foot on bench, DBs in hand', sets: 3, reps: '8–10/leg', startWeight: 30, weeklyAdd: 2.5 },
+      { name: 'Hip Thrust', note: 'Barbell, pause and squeeze at top', sets: 3, reps: '10–12', startWeight: 135, weeklyAdd: 5 },
+      { name: 'Leg Extension', note: 'Squeeze quads, slow eccentric', sets: 3, reps: '12–15', startWeight: 70, weeklyAdd: 5 },
+      { name: 'Seated Leg Curl', note: 'Control the negative, full range', sets: 3, reps: '10–12', startWeight: 60, weeklyAdd: 5 },
+      { name: 'Seated Calf Raise', note: 'Slow, 2-sec pause at stretch', sets: 4, reps: '12–15', startWeight: 90, weeklyAdd: 5 },
+    ]
+  }
+];
+
+const DELOAD_WEEKS = [4, 8]; // 1-indexed
+const TOTAL_WEEKS = 12;
+
+// ---- STATE (persisted via localStorage) ----
+// state.sessions[sessionIndex] = { completed: bool, exercises: [ { sets: [ {weight, reps, rpe} ] } ] }
+const STORAGE_KEY = 'workout_tracker_v1';
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch(e) {}
+  return { sessions: {} };
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) {}
+}
+
+let state = loadState();
+
+function getSessionIndex(week, dayInWeek) { return (week - 1) * 4 + dayInWeek; } // 0-based
+
+function getSuggestedWeight(exerciseTemplate, week) {
+  // Weeks 1-2: starting weight. Then linear increase, but deload weeks use the weight from the prior non-deload week.
+  let effectiveWeek = week;
+  // For deload weeks, use the progression week before
+  if (DELOAD_WEEKS.includes(week)) {
+    effectiveWeek = week; // same weight, just fewer sets
+  }
+  // Ramp: week 1-2 = start, then +weeklyAdd per week after that
+  let weeksOfProgress = Math.max(0, effectiveWeek - 2);
+  // But skip deload weeks in the count of progression weeks
+  let deloadsBefore = DELOAD_WEEKS.filter(d => d > 2 && d <= effectiveWeek).length;
+  weeksOfProgress = Math.max(0, weeksOfProgress - deloadsBefore);
+  return Math.round(exerciseTemplate.startWeight + (weeksOfProgress * exerciseTemplate.weeklyAdd));
+}
+
+function getNumSets(exerciseTemplate, week) {
+  return DELOAD_WEEKS.includes(week) ? Math.ceil(exerciseTemplate.sets / 2) : exerciseTemplate.sets;
+}
+
+function isSessionComplete(si) {
+  return state.sessions[si] && state.sessions[si].completed;
+}
+
+function isSessionPartial(si) {
+  const s = state.sessions[si];
+  if (!s || s.completed) return false;
+  return s.exercises && s.exercises.some(ex => ex.sets && ex.sets.some(set => set.weight || set.reps));
+}
+
+function getCompletedCount() {
+  let c = 0;
+  for (let i = 0; i < TOTAL_WEEKS * 4; i++) { if (isSessionComplete(i)) c++; }
+  return c;
+}
+
+// ---- RENDERING: HOME ----
+function renderHome() {
+  const grid = document.getElementById('weekGrid');
+  grid.innerHTML = '';
+
+  const completed = getCompletedCount();
+  const total = TOTAL_WEEKS * 4;
+  document.getElementById('progressFill').style.width = (completed / total * 100) + '%';
+  document.getElementById('progressText').textContent = completed + ' of ' + total + ' sessions';
+  document.getElementById('progressPct').textContent = Math.round(completed / total * 100) + '%';
+
+  // Find current week (first week with incomplete sessions)
+  let currentWeek = TOTAL_WEEKS;
+  for (let w = 1; w <= TOTAL_WEEKS; w++) {
+    let allDone = true;
+    for (let d = 0; d < 4; d++) {
+      if (!isSessionComplete(getSessionIndex(w, d))) { allDone = false; break; }
+    }
+    if (!allDone) { currentWeek = w; break; }
+  }
+
+  for (let w = 1; w <= TOTAL_WEEKS; w++) {
+    const isDeload = DELOAD_WEEKS.includes(w);
+    const block = document.createElement('div');
+    block.className = 'week-block';
+
+    let weekDone = true;
+    for (let d = 0; d < 4; d++) {
+      if (!isSessionComplete(getSessionIndex(w, d))) { weekDone = false; break; }
+    }
+
+    let tagHTML = '';
+    if (weekDone) tagHTML = '<span class="week-tag done">Complete</span>';
+    else if (isDeload) tagHTML = '<span class="week-tag deload">Deload</span>';
+    else if (w === currentWeek) tagHTML = '<span class="week-tag current">Current</span>';
+
+    const header = document.createElement('div');
+    header.className = 'week-header';
+    header.innerHTML = '<h2>Week ' + w + '</h2>' + tagHTML;
+
+    const sessions = document.createElement('div');
+    sessions.className = 'week-sessions' + (w === currentWeek ? ' open' : '');
+
+    for (let d = 0; d < 4; d++) {
+      const si = getSessionIndex(w, d);
+      const day = DAYS[d];
+      const btn = document.createElement('button');
+      btn.className = 'session-btn';
+
+      let statusClass = 'todo';
+      let statusText = 'To do';
+      if (isSessionComplete(si)) { statusClass = 'done'; statusText = 'Done'; }
+      else if (isSessionPartial(si)) { statusClass = 'partial'; statusText = 'In progress'; }
+
+      btn.innerHTML =
+        '<div class="session-label"><span>Session ' + (si + 1) + '</span><span class="session-type">' + day.name + ' — ' + day.focus + '</span></div>' +
+        '<span class="session-status ' + statusClass + '">' + statusText + '</span>';
+
+      btn.onclick = () => openWorkout(w, d);
+      sessions.appendChild(btn);
+    }
+
+    header.onclick = () => {
+      sessions.classList.toggle('open');
+    };
+
+    block.appendChild(header);
+    block.appendChild(sessions);
+    grid.appendChild(block);
+  }
+}
+
+// ---- RENDERING: WORKOUT ----
+let currentSession = null;
+
+function openWorkout(week, dayInWeek) {
+  currentSession = { week, dayInWeek, index: getSessionIndex(week, dayInWeek) };
+  const day = DAYS[dayInWeek];
+  const isDeload = DELOAD_WEEKS.includes(week);
+
+  document.getElementById('workoutTitle').textContent = day.name;
+  document.getElementById('workoutMeta').textContent = 'Week ' + week + ' · Session ' + (currentSession.index + 1) + ' of 48 · ' + day.focus;
+  document.getElementById('deloadBanner').style.display = isDeload ? 'block' : 'none';
+
+  const list = document.getElementById('exerciseList');
+  list.innerHTML = '';
+
+  // Init session state if needed
+  if (!state.sessions[currentSession.index]) {
+    state.sessions[currentSession.index] = { completed: false, exercises: [] };
+  }
+  const sessionState = state.sessions[currentSession.index];
+
+  day.exercises.forEach((ex, ei) => {
+    const numSets = getNumSets(ex, week);
+    const sugWeight = getSuggestedWeight(ex, week);
+
+    if (!sessionState.exercises[ei]) {
+      sessionState.exercises[ei] = { sets: [] };
+    }
+
+    const card = document.createElement('div');
+    card.className = 'exercise-card';
+
+    let html = '<div class="exercise-card-header"><h3>' + ex.name + '</h3><div class="note">' + ex.note + ' · ' + ex.reps + ' reps</div></div>';
+
+    html += '<div class="suggested-label">Suggested: ' + sugWeight + ' lbs</div>';
+
+    html += '<div class="set-grid">';
+    html += '<div class="set-grid-header"><span>Set</span><span>Lbs</span><span>Reps</span><span>RPE</span></div>';
+
+    for (let s = 0; s < numSets; s++) {
+      if (!sessionState.exercises[ei].sets[s]) {
+        sessionState.exercises[ei].sets[s] = { weight: '', reps: '', rpe: '' };
+      }
+      const setData = sessionState.exercises[ei].sets[s];
+      const weightVal = setData.weight || '';
+      const repsVal = setData.reps || '';
+      const rpeVal = setData.rpe || '';
+
+      const weightClass = weightVal ? 'filled' : 'suggested';
+      const displayWeight = weightVal || sugWeight;
+
+      html += '<div class="set-row">';
+      html += '<div class="set-num">' + (s + 1) + '</div>';
+      html += '<div class="set-input-wrap"><input class="set-input ' + weightClass + '" type="number" inputmode="decimal" value="' + displayWeight + '" data-ei="' + ei + '" data-si="' + s + '" data-field="weight" data-suggested="' + sugWeight + '" onfocus="onWeightFocus(this)" oninput="onInput(this)"></div>';
+      html += '<div class="set-input-wrap"><input class="set-input' + (repsVal ? ' filled' : '') + '" type="number" inputmode="numeric" value="' + repsVal + '" placeholder="—" data-ei="' + ei + '" data-si="' + s + '" data-field="reps" oninput="onInput(this)"></div>';
+
+      html += '<div class="set-input-wrap"><select class="rpe-select' + (rpeVal ? ' filled' : '') + '" data-ei="' + ei + '" data-si="' + s + '" data-field="rpe" onchange="onSelect(this)">';
+      html += '<option value="">—</option>';
+      for (let r = 6; r <= 10; r++) {
+        const sel = rpeVal == r ? ' selected' : '';
+        html += '<option value="' + r + '"' + sel + '>' + r + '</option>';
+      }
+      html += '</select></div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    card.innerHTML = html;
+    list.appendChild(card);
+  });
+
+  showScreen('workoutScreen');
+}
+
+function onWeightFocus(el) {
+  const suggested = el.dataset.suggested;
+  if (!el.classList.contains('filled')) {
+    el.value = '';
+    el.placeholder = suggested;
+  }
+  el.select();
+}
+
+function onInput(el) {
+  const ei = parseInt(el.dataset.ei);
+  const si = parseInt(el.dataset.si);
+  const field = el.dataset.field;
+  const val = el.value;
+
+  state.sessions[currentSession.index].exercises[ei].sets[si][field] = val;
+  saveState();
+
+  if (field === 'weight') {
+    if (val && val !== el.dataset.suggested) {
+      el.classList.add('filled');
+      el.classList.remove('suggested');
+    } else if (!val) {
+      el.classList.remove('filled');
+      el.classList.add('suggested');
+      el.value = el.dataset.suggested;
+    }
+  } else {
+    if (val) el.classList.add('filled');
+    else el.classList.remove('filled');
+  }
+}
+
+function onSelect(el) {
+  const ei = parseInt(el.dataset.ei);
+  const si = parseInt(el.dataset.si);
+  state.sessions[currentSession.index].exercises[ei].sets[si].rpe = el.value;
+  saveState();
+  if (el.value) el.classList.add('filled');
+  else el.classList.remove('filled');
+}
+
+function finishWorkout() {
+  if (!currentSession) return;
+  state.sessions[currentSession.index].completed = true;
+  saveState();
+  showToast('Workout saved');
+  showHome();
+}
+
+// ---- NAVIGATION ----
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showHome() {
+  renderHome();
+  showScreen('homeScreen');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ---- SERVICE WORKER ----
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ---- INIT ----
+renderHome();
+</script>
+</body>
+</html>
